@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}首页{% endblock %}
+{% block page_title %}首页{% endblock %}
+
+{% block content %}
+{% for a in alerts %}
+<div class="alert alert-warning">{{ a }}</div>
+{% endfor %}
+
+<!-- Stats cards -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-icon">📦</div>
+    <div class="stat-val">{{ stats.total }}</div>
+    <div class="stat-label">累计运单</div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon">📅</div>
+    <div class="stat-val">{{ stats.today }}</div>
+    <div class="stat-label">今日录入</div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon">📊</div>
+    <div class="stat-val">{{ stats.month }}</div>
+    <div class="stat-label">本月录入</div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon">✏️</div>
+    <div class="stat-val">{{ stats.pending }}</div>
+    <div class="stat-label">{{ '待处理申请' if session.role in ('admin','finance') else '我的待审申请' }}</div>
+  </div>
+</div>
+
+{% if session.role in ('admin', 'finance') %}
+<!-- Finance + Shipping blocks -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+  <!-- Finance board -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">💰 财务快报（本月）</span>
+      <span style="font-size:11px;color:#8c8fa3">仅限管理员/财务</span>
+    </div>
+    <div class="panel-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="finance-stats">
+        <div class="mini-stat"><div class="mini-label">今日收款</div><div class="mini-val" id="fs-today">—</div></div>
+        <div class="mini-stat"><div class="mini-label">本月收款</div><div class="mini-val" id="fs-month">—</div></div>
+        <div class="mini-stat"><div class="mini-label">本月毛利</div><div class="mini-val" id="fs-profit">—</div></div>
+        <div class="mini-stat"><div class="mini-label">本月运单</div><div class="mini-val" id="fs-count">—</div></div>
+      </div>
+      <div style="margin-top:14px;border-top:1px solid #ebedf5;padding-top:12px">
+        <div style="font-size:12px;color:#8c8fa3;margin-bottom:8px">本月业务员收款</div>
+        <div id="fs-by-person" style="font-size:13px;color:#374151"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shipping board -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">🚢 集运概况</span>
+    </div>
+    <div class="panel-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="mini-stat">
+          <div class="mini-label">今日出货</div>
+          <div class="mini-val">{{ stats.today }}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-label">本月出货</div>
+          <div class="mini-val">{{ stats.month }}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-label">累计运单</div>
+          <div class="mini-val">{{ stats.total }}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-label">待审核申请</div>
+          <div class="mini-val">{{ stats.pending }}</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;text-align:center">
+        <a href="{{ url_for('shipments') }}" class="btn btn-primary btn-sm">进入运单管理 →</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endif %}
+
+<!-- Recent shipments -->
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">最近运单</span>
+    <a href="{{ url_for('shipments') }}" class="btn btn-sm">查看全部</a>
+  </div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr><th>时间</th><th>原单号</th><th>客户公司</th><th>目的国</th><th>渠道</th><th>来源</th></tr>
+      </thead>
+      <tbody>
+        {% if recent %}
+          {% for r in recent %}
+          <tr>
+            <td>{{ r.created_at }}</td>
+            <td><b>{{ r.tracking_no or '—' }}</b></td>
+            <td>{{ r.customer or '—' }}</td>
+            <td>{{ r.destination or '—' }}</td>
+            <td>{{ r.channel or '—' }}</td>
+            <td><span class="badge badge-{{ 'bot' if 'bot' in (r.source or '') else 'web' }}">{{ r.source or '—' }}</span></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="6" class="empty">暂无运单记录</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if session.role in ('admin','finance') %}
+<script>
+fetch('/api/finance/stats')
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    document.getElementById('fs-today').textContent  = '¥' + (d.today_revenue||0).toLocaleString();
+    document.getElementById('fs-month').textContent  = '¥' + (d.total_revenue||0).toLocaleString();
+    document.getElementById('fs-profit').textContent = '¥' + (d.total_profit||0).toLocaleString();
+    var cnt = (d.by_salesperson||[]).reduce(function(s,r){return s+(r.cnt||0);},0);
+    document.getElementById('fs-count').textContent  = cnt + ' 票';
+    var html = (d.by_salesperson||[]).map(function(r){
+      return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f4f6fc">'
+        + '<span>' + (r.salesperson||'未知') + '</span>'
+        + '<span style="color:#4c80f6;font-weight:600">¥' + ((r.revenue||0)).toLocaleString() + '</span>'
+        + '</div>';
+    }).join('');
+    document.getElementById('fs-by-person').innerHTML = html || '<span style="color:#8c8fa3">暂无数据</span>';
+  })
+  .catch(function(){});
+</script>
+{% endif %}
+
+<style>
+.mini-stat { background: #f8f9ff; border-radius: 8px; padding: 12px 14px; border: 1px solid #ebedf5; }
+.mini-label { font-size: 11px; color: #8c8fa3; margin-bottom: 4px; }
+.mini-val   { font-size: 22px; font-weight: 700; color: #0f2044; }
+</style>
+{% endblock %}

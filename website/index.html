@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>深圳市雄楚速通国际物流有限公司 | XCST International Logistics</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0f2044;
+    --blue: #1a3a6e;
+    --gold: #c8992a;
+    --light: #f5f7fa;
+    --text: #2c3e50;
+    --gray: #6b7c93;
+  }
+
+  body { font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif; color: var(--text); }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; width: 100%; z-index: 100;
+    background: rgba(15,32,68,0.96); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 5%; height: 64px;
+  }
+  .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+  .logo-icon { width: 44px; height: 44px; border-radius: 8px; object-fit: contain; }
+  .logo-text { color: white; font-size: 14px; line-height: 1.3; }
+  .logo-text span { display: block; font-size: 11px; color: rgba(255,255,255,0.6); }
+
+  .nav-right { display: flex; align-items: center; gap: 32px; }
+  .nav-links { display: flex; gap: 28px; list-style: none; }
+  .nav-links a { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 14px; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--gold); }
+
+  .lang-btn {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+    color: white; padding: 6px 14px; border-radius: 20px; cursor: pointer;
+    font-size: 13px; transition: all 0.2s;
+  }
+  .lang-btn:hover { background: var(--gold); border-color: var(--gold); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh; background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 60%, #2a5298 100%);
+    display: flex; align-items: center; padding: 0 5%; position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; top: -50%; right: -10%;
+    width: 600px; height: 600px; border-radius: 50%;
+    background: rgba(200,153,42,0.08); pointer-events: none;
+  }
+  .hero::after {
+    content: ''; position: absolute; bottom: -20%; left: 30%;
+    width: 400px; height: 400px; border-radius: 50%;
+    background: rgba(255,255,255,0.03); pointer-events: none;
+  }
+  .hero-content { max-width: 640px; z-index: 1; }
+  .hero-tag {
+    display: inline-block; background: rgba(200,153,42,0.2); color: var(--gold);
+    border: 1px solid rgba(200,153,42,0.4); padding: 5px 16px;
+    border-radius: 20px; font-size: 13px; margin-bottom: 24px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 52px; font-weight: 800; color: white; line-height: 1.15; margin-bottom: 16px; }
+  .hero h1 em { color: var(--gold); font-style: normal; }
+  .hero p { font-size: 18px; color: rgba(255,255,255,0.7); line-height: 1.7; margin-bottom: 36px; }
+  .hero-btns { display: flex; gap: 16px; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--gold); color: white; padding: 14px 32px;
+    border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { background: #b8882a; transform: translateY(-1px); }
+  .btn-outline {
+    border: 1.5px solid rgba(255,255,255,0.4); color: white; padding: 14px 32px;
+    border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 15px;
+    transition: all 0.2s;
+  }
+  .btn-outline:hover { border-color: white; background: rgba(255,255,255,0.08); }
+
+  .hero-stats {
+    display: flex; gap: 40px; margin-top: 56px; padding-top: 40px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+  }
+  .stat-num { font-size: 32px; font-weight: 800; color: white; }
+  .stat-label { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+  /* ── SECTIONS ── */
+  section { padding: 96px 5%; }
+  .section-tag {
+    font-size: 12px; font-weight: 700; letter-spacing: 2px; color: var(--gold);
+    text-transform: uppercase; margin-bottom: 12px;
+  }
+  .section-title { font-size: 38px; font-weight: 800; color: var(--navy); margin-bottom: 16px; line-height: 1.2; }
+  .section-sub { font-size: 17px; color: var(--gray); max-width: 560px; line-height: 1.7; }
+
+  /* ── SERVICES ── */
+  #services { background: var(--light); }
+  .services-header { margin-bottom: 56px; }
+  .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .service-card {
+    background: white; border-radius: 16px; padding: 36px 32px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06); transition: all 0.3s;
+    border-bottom: 3px solid transparent;
+  }
+  .service-card:hover { transform: translateY(-4px); box-shadow: 0 8px 40px rgba(0,0,0,0.12); border-bottom-color: var(--gold); }
+  .service-icon {
+    width: 56px; height: 56px; background: rgba(15,32,68,0.06);
+    border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    font-size: 26px; margin-bottom: 20px;
+  }
+  .service-card h3 { font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+  .service-card p { font-size: 15px; color: var(--gray); line-height: 1.7; }
+  .service-features { margin-top: 20px; list-style: none; }
+  .service-features li { font-size: 14px; color: var(--gray); padding: 5px 0; padding-left: 16px; position: relative; }
+  .service-features li::before { content: '✓'; position: absolute; left: 0; color: var(--gold); font-weight: 700; }
+
+  /* ── ABOUT ── */
+  #about { background: white; }
+  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+  .about-visual {
+    background: linear-gradient(135deg, var(--navy), var(--blue));
+    border-radius: 20px; padding: 48px; color: white;
+    position: relative; overflow: hidden;
+  }
+  .about-visual::before {
+    content: ''; position: absolute; top: -30px; right: -30px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: rgba(200,153,42,0.15);
+  }
+  .about-visual h3 { font-size: 28px; font-weight: 800; margin-bottom: 16px; line-height: 1.3; }
+  .about-visual p { color: rgba(255,255,255,0.75); line-height: 1.8; font-size: 15px; }
+  .about-badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+  .badge {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px;
+  }
+  .about-points { display: flex; flex-direction: column; gap: 28px; }
+  .point { display: flex; gap: 16px; }
+  .point-icon {
+    width: 44px; height: 44px; background: rgba(200,153,42,0.1);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .point h4 { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+  .point p { font-size: 14px; color: var(--gray); line-height: 1.6; }
+
+  /* ── CONTACT ── */
+  #contact { background: var(--navy); }
+  #contact .section-title { color: white; }
+  #contact .section-sub { color: rgba(255,255,255,0.6); }
+  #contact .section-tag { color: var(--gold); }
+  .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin-top: 56px; }
+  .contact-items { display: flex; flex-direction: column; gap: 32px; }
+  .contact-item { display: flex; gap: 16px; }
+  .contact-icon {
+    width: 48px; height: 48px; background: rgba(200,153,42,0.15);
+    border: 1px solid rgba(200,153,42,0.3); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .contact-item h4 { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .contact-item p { font-size: 16px; color: white; line-height: 1.6; }
+  .contact-cta {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 40px; display: flex; flex-direction: column; justify-content: center;
+  }
+  .contact-cta h3 { font-size: 24px; font-weight: 700; color: white; margin-bottom: 12px; }
+  .contact-cta p { color: rgba(255,255,255,0.6); line-height: 1.7; margin-bottom: 28px; }
+  .wechat-box {
+    background: rgba(255,255,255,0.08); border-radius: 10px;
+    padding: 16px 20px; display: flex; align-items: center; gap: 12px;
+  }
+  .wechat-box span { font-size: 24px; }
+  .wechat-box div { color: rgba(255,255,255,0.9); font-size: 15px; }
+  .wechat-box div small { display: block; color: rgba(255,255,255,0.4); font-size: 12px; margin-top: 2px; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #080f1e; color: rgba(255,255,255,0.4);
+    text-align: center; padding: 28px 5%; font-size: 13px; line-height: 1.8;
+  }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 36px; }
+    .services-grid, .about-grid, .contact-grid { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    .hero-stats { gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="#">
+    <img class="logo-icon" src="data:image/jpeg;base64,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" alt="XCST Logo">
+    <div class="logo-text">
+      <span class="cn-text">深圳市雄楚速通国际物流</span>
+      <span class="en-text" style="display:none">XCST International Logistics</span>
+      <span>xcstlogistics.com</span>
+    </div>
+  </a>
+  <div class="nav-right">
+    <ul class="nav-links">
+      <li><a href="#services" class="cn-text">服务</a><a href="#services" class="en-text" style="display:none">Services</a></li>
+      <li><a href="#about" class="cn-text">关于我们</a><a href="#about" class="en-text" style="display:none">About</a></li>
+      <li><a href="#contact" class="cn-text">联系我们</a><a href="#contact" class="en-text" style="display:none">Contact</a></li>
+    </ul>
+    <button class="lang-btn" onclick="toggleLang()">EN / 中文</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="hero-content">
+    <div class="hero-tag cn-text">专业国际物流服务商</div>
+    <div class="hero-tag en-text" style="display:none">Professional International Logistics</div>
+
+    <h1 class="cn-text">连接中国<br>通达<em>北美</em>全境</h1>
+    <h1 class="en-text" style="display:none">Connecting China<br>to <em>North America</em></h1>
+
+    <p class="cn-text">深圳市雄楚速通国际物流有限公司，专注海运整拼箱及北美集运服务，为跨境电商卖家与贸易商提供安全、快速、可靠的货运解决方案。</p>
+    <p class="en-text" style="display:none">Shenzhen XCST International Logistics Co., Ltd. specializes in ocean freight and North America consolidation services, delivering safe, fast and reliable shipping solutions for cross-border sellers and traders.</p>
+
+    <div class="hero-btns">
+      <a href="#contact" class="btn-primary cn-text">立即询价</a>
+      <a href="#contact" class="btn-primary en-text" style="display:none">Get a Quote</a>
+      <a href="#services" class="btn-outline cn-text">了解服务</a>
+      <a href="#services" class="btn-outline en-text" style="display:none">Our Services</a>
+    </div>
+
+    <div class="hero-stats">
+      <div>
+        <div class="stat-num">3+</div>
+        <div class="stat-label cn-text">年行业经验</div>
+        <div class="stat-label en-text" style="display:none">Years Experience</div>
+      </div>
+      <div>
+        <div class="stat-num">北美</div>
+        <div class="stat-label cn-text">核心航线覆盖</div>
+        <div class="stat-label en-text" style="display:none">Core Route Coverage</div>
+      </div>
+      <div>
+        <div class="stat-num">7×24</div>
+        <div class="stat-label cn-text">客服响应</div>
+        <div class="stat-label en-text" style="display:none">Customer Support</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="services-header">
+    <div class="section-tag cn-text">我们的服务</div>
+    <div class="section-tag en-text" style="display:none">OUR SERVICES</div>
+    <div class="section-title cn-text">专业物流，全程无忧</div>
+    <div class="section-title en-text" style="display:none">Professional Logistics Solutions</div>
+    <p class="section-sub cn-text">从深圳仓库到北美终端客户，我们提供端到端的货运解决方案。</p>
+    <p class="section-sub en-text" style="display:none">From Shenzhen warehouses to North American end customers, we provide end-to-end freight solutions.</p>
+  </div>
+  <div class="services-grid">
+
+    <div class="service-card">
+      <div class="service-icon">🚢</div>
+      <h3 class="cn-text">海运整箱 / 拼箱</h3>
+      <h3 class="en-text" style="display:none">Ocean Freight (FCL/LCL)</h3>
+      <p class="cn-text">提供中美海运整箱（FCL）及拼箱（LCL）服务，稳定船期，具备竞争力的运价。</p>
+      <p class="en-text" style="display:none">Full Container Load (FCL) and Less than Container Load (LCL) ocean freight services with stable schedules and competitive rates.</p>
+      <ul class="service-features">
+        <li class="cn-text">上海 / 深圳 / 广州出发</li>
+        <li class="cn-text en-text-hide">美西 / 美东 / 加拿大全港</li>
+        <li class="cn-text en-text-hide">实时货物追踪</li>
+        <li class="en-text" style="display:none">Departing from Shanghai / Shenzhen / Guangzhou</li>
+        <li class="en-text" style="display:none">US West Coast / East Coast / Canada</li>
+        <li class="en-text" style="display:none">Real-time shipment tracking</li>
+      </ul>
+    </div>
+
+    <div class="service-card">
+      <div class="service-icon">📦</div>
+      <h3 class="cn-text">北美集运专线</h3>
+      <h3 class="en-text" style="display:none">North America Consolidation</h3>
+      <p class="cn-text">专为跨境电商卖家设计的北美集运服务，小批量货物整合发运，降低运输成本。</p>
+      <p class="en-text" style="display:none">Designed for cross-border e-commerce sellers, our consolidation service combines small shipments to reduce shipping costs.</p>
+      <ul class="service-features">
+        <li class="cn-text">最小1CBM起运</li>
+        <li class="cn-text">门到门配送服务</li>
+        <li class="cn-text">亚马逊FBA头程</li>
+        <li class="en-text" style="display:none">Minimum 1 CBM per shipment</li>
+        <li class="en-text" style="display:none">Door-to-door delivery</li>
+        <li class="en-text" style="display:none">Amazon FBA First Mile</li>
+      </ul>
+    </div>
+
+    <div class="service-card">
+      <div class="service-icon">🌐</div>
+      <h3 class="cn-text">货运代理 · 清关</h3>
+      <h3 class="en-text" style="display:none">Freight Forwarding & Customs</h3>
+      <p class="cn-text">提供完整的货运代理服务，包含出口报关、目的港清关及本地派送，全程协助。</p>
+      <p class="en-text" style="display:none">Complete freight forwarding services including export customs declaration, destination port clearance and local delivery.</p>
+      <ul class="service-features">
+        <li class="cn-text">中美出口报关</li>
+        <li class="cn-text">美国海关清关</li>
+        <li class="cn-text">加拿大清关</li>
+        <li class="en-text" style="display:none">China export customs clearance</li>
+        <li class="en-text" style="display:none">US Customs clearance</li>
+        <li class="en-text" style="display:none">Canada customs clearance</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-grid">
+    <div class="about-visual">
+      <h3 class="cn-text">深耕国际物流<br>专注北美航线</h3>
+      <h3 class="en-text" style="display:none">Focused on International Logistics<br>Specialized in North America Routes</h3>
+      <p class="cn-text">雄楚速通成立于2021年，总部位于深圳龙华，是一家专注中美、中加跨境物流的国际货运代理公司。凭借稳定的船公司合作关系和丰富的操作经验，为客户提供高效、可靠的物流解决方案。</p>
+      <p class="en-text" style="display:none">Founded in 2021 and headquartered in Longhua, Shenzhen, XCST is an international freight forwarder specializing in China-US and China-Canada cross-border logistics. With stable carrier partnerships and extensive operational experience, we deliver efficient and reliable logistics solutions.</p>
+      <div class="about-badges">
+        <span class="badge cn-text">🏢 2021年成立</span>
+        <span class="badge cn-text">📍 深圳龙华</span>
+        <span class="badge cn-text">🇺🇸 北美专线</span>
+        <span class="badge en-text" style="display:none">🏢 Est. 2021</span>
+        <span class="badge en-text" style="display:none">📍 Longhua, Shenzhen</span>
+        <span class="badge en-text" style="display:none">🇺🇸 North America Route</span>
+      </div>
+    </div>
+    <div class="about-points">
+      <div class="point">
+        <div class="point-icon">🤝</div>
+        <div>
+          <h4 class="cn-text">稳定的合作伙伴</h4>
+          <h4 class="en-text" style="display:none">Stable Partner Network</h4>
+          <p class="cn-text">与多家主流船公司及北美本地派送商建立长期合作，确保舱位稳定、时效有保障。</p>
+          <p class="en-text" style="display:none">Long-term partnerships with major shipping lines and North American local delivery companies, ensuring stable space and reliable transit times.</p>
+        </div>
+      </div>
+      <div class="point">
+        <div class="point-icon">⚡</div>
+        <div>
+          <h4 class="cn-text">快速响应</h4>
+          <h4 class="en-text" style="display:none">Fast Response</h4>
+          <p class="cn-text">7×24小时客服支持，询价、订舱、提单、追踪，全程在线响应，不让货物等待。</p>
+          <p class="en-text" style="display:none">24/7 customer service support. Inquiries, booking, bill of lading, tracking — all handled online without delays.</p>
+        </div>
+      </div>
+      <div class="point">
+        <div class="point-icon">🔒</div>
+        <div>
+          <h4 class="cn-text">安全可靠</h4>
+          <h4 class="en-text" style="display:none">Safe & Reliable</h4>
+          <p class="cn-text">严格的操作流程与货物追踪体系，货物安全送达是我们的基本承诺。</p>
+          <p class="en-text" style="display:none">Strict operational procedures and cargo tracking system. Safe delivery is our fundamental commitment.</p>
+        </div>
+      </div>
+      <div class="point">
+        <div class="point-icon">💰</div>
+        <div>
+          <h4 class="cn-text">透明定价</h4>
+          <h4 class="en-text" style="display:none">Transparent Pricing</h4>
+          <p class="cn-text">无隐藏费用，报价清晰透明，帮助客户有效控制物流成本。</p>
+          <p class="en-text" style="display:none">No hidden fees. Clear and transparent quotes to help clients effectively control logistics costs.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-tag">CONTACT US</div>
+  <div class="section-title cn-text">立即联系我们</div>
+  <div class="section-title en-text" style="display:none">Get In Touch</div>
+  <p class="section-sub cn-text">有货运需求？立即联系我们，30分钟内给您报价。</p>
+  <p class="section-sub en-text" style="display:none">Have a shipment? Contact us now and receive a quote within 30 minutes.</p>
+
+  <div class="contact-grid">
+    <div class="contact-items">
+      <div class="contact-item">
+        <div class="contact-icon">📞</div>
+        <div>
+          <h4 class="cn-text">电话 / 微信</h4>
+          <h4 class="en-text" style="display:none">Phone / WeChat</h4>
+          <p>+86 159 7107 0909</p>
+        </div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-icon">📍</div>
+        <div>
+          <h4 class="cn-text">公司地址</h4>
+          <h4 class="en-text" style="display:none">Address</h4>
+          <p class="cn-text">深圳市龙华区东环二路6号<br>7栋厂房102</p>
+          <p class="en-text" style="display:none">Building 7, Factory 102<br>No.6 East Ring Road 2nd<br>Longhua District, Shenzhen, China</p>
+        </div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-icon">⏰</div>
+        <div>
+          <h4 class="cn-text">工作时间</h4>
+          <h4 class="en-text" style="display:none">Business Hours</h4>
+          <p class="cn-text">周一至周六 09:00 - 18:00<br>紧急事务7×24小时响应</p>
+          <p class="en-text" style="display:none">Monday - Saturday 09:00 - 18:00 CST<br>Emergency support available 24/7</p>
+        </div>
+      </div>
+    </div>
+    <div class="contact-cta">
+      <h3 class="cn-text">扫码加微信，立即询价</h3>
+      <h3 class="en-text" style="display:none">Add WeChat for Instant Quote</h3>
+      <p class="cn-text">我们的团队将在30分钟内回复您的询价，提供最具竞争力的运价方案。</p>
+      <p class="en-text" style="display:none">Our team will respond to your inquiry within 30 minutes with the most competitive shipping rates.</p>
+      <div class="wechat-box">
+        <span>💬</span>
+        <div>
+          <div class="cn-text">微信号：15971070909</div>
+          <div class="en-text" style="display:none">WeChat ID: 15971070909</div>
+          <small class="cn-text">添加微信，发送货物信息即可获取报价</small>
+          <small class="en-text" style="display:none">Add WeChat and send cargo details for a quote</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2024 深圳市雄楚速通国际物流有限公司 · Shenzhen XCST International Logistics Co., Ltd.</p>
+  <p style="margin-top:6px">统一社会信用代码：91440300MA5H3606T6W · 深圳市龙华区东环二路6号7栋厂房102</p>
+</footer>
+
+<script>
+  let isEn = false;
+  function toggleLang() {
+    isEn = !isEn;
+    document.querySelectorAll('.cn-text').forEach(el => el.style.display = isEn ? 'none' : '');
+    document.querySelectorAll('.en-text').forEach(el => el.style.display = isEn ? '' : 'none');
+    document.querySelector('.lang-btn').textContent = isEn ? '中文' : 'EN';
+    document.documentElement.lang = isEn ? 'en' : 'zh-CN';
+  }
+
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+</body>
+</html>

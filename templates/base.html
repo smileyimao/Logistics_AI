@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} — 雄楚速通运单系统</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+<div class="layout">
+
+  <nav class="sidebar">
+    <div class="brand">
+      <img src="{{ url_for('static', filename='logo.jpg') }}" alt="XCST">
+      <div>
+        <div class="brand-name">雄楚速通</div>
+        <div class="brand-sub">运单管理系统</div>
+      </div>
+    </div>
+
+    <div class="nav-body">
+      <a href="{{ url_for('dashboard') }}"  class="nav-item {% if active=='home'     %}active{% endif %}"><span class="nav-icon">🏠</span>首页</a>
+      <a href="{{ url_for('shipments') }}"  class="nav-item {% if active=='shipments'%}active{% endif %}"><span class="nav-icon">📦</span>运单管理</a>
+      <a href="{{ url_for('upload') }}"     class="nav-item {% if active=='upload'   %}active{% endif %}"><span class="nav-icon">⬆️</span>上传中心</a>
+      <a href="{{ url_for('edits') }}"      class="nav-item {% if active=='edits'    %}active{% endif %}"><span class="nav-icon">✏️</span>运单修改</a>
+      {% if session.role in ('admin','finance') %}
+      <div class="nav-section">财务</div>
+      <a href="#" class="nav-item {% if active=='finance'  %}active{% endif %}"><span class="nav-icon">💰</span>财务看板</a>
+      {% endif %}
+      {% if session.role == 'admin' %}
+      <div class="nav-section">管理</div>
+      <a href="{{ url_for('settings') }}"   class="nav-item {% if active=='settings' %}active{% endif %}"><span class="nav-icon">⚙️</span>系统设置</a>
+      <a href="{{ url_for('audit_logs') }}" class="nav-item {% if active=='logs'     %}active{% endif %}"><span class="nav-icon">📋</span>审计日志</a>
+      <a href="{{ url_for('users') }}"      class="nav-item {% if active=='users'    %}active{% endif %}"><span class="nav-icon">👥</span>用户管理</a>
+      {% endif %}
+    </div>
+
+    <div class="nav-bottom">
+      <div class="user-card">
+        <div class="user-name">{{ session.display or session.user }}</div>
+        <div class="user-role role-{{ session.role }}">{{ {'admin':'管理员','finance':'财务','staff':'员工'}.get(session.role,'') }}</div>
+      </div>
+      <a href="{{ url_for('app_logout') }}" class="logout-btn">退出登录</a>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title">{% block page_title %}{% endblock %}</div>
+      <div class="topbar-right">{{ now }}</div>
+    </div>
+    <div class="content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

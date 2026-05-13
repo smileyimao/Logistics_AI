@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}审计日志{% endblock %}
+{% block page_title %}审计日志{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">审计日志（最近500条）</span></div>
+  <div class="filter-row">
+    <form method="GET" style="display:flex;gap:10px">
+      <select name="user">
+        <option value="">全部用户</option>
+        {% for u in users %}
+        <option value="{{ u }}" {{ 'selected' if u == user_filter }}>{{ u }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm">筛选</button>
+      <a href="{{ url_for('audit_logs') }}" class="btn btn-outline btn-sm">重置</a>
+    </form>
+  </div>
+  <table>
+    <thead>
+      <tr><th>时间</th><th>用户</th><th>操作</th><th>详情</th><th>IP</th></tr>
+    </thead>
+    <tbody>
+      {% if rows %}
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.created_at }}</td>
+          <td><b>{{ r.username }}</b></td>
+          <td>{{ r.action }}</td>
+          <td>{{ r.detail or '-' }}</td>
+          <td>{{ r.ip or '-' }}</td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr><td colspan="5" class="empty">暂无日志</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

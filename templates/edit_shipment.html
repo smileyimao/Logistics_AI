@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}编辑运单{% endblock %}
+{% block page_title %}编辑运单 #{{ r.id }}{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">编辑运单 — {{ r.tracking_no or '无单号' }}</span></div>
+  <div class="panel-body">
+    <form method="POST">
+      <div class="form-grid">
+        <div class="form-group"><label>原单号</label><input name="tracking_no" value="{{ r.tracking_no or '' }}"></div>
+        <div class="form-group"><label>转单号</label><input name="transfer_no" value="{{ r.transfer_no or '' }}"></div>
+        <div class="form-group"><label>业务员</label><input name="salesperson" value="{{ r.salesperson or '' }}"></div>
+        <div class="form-group"><label>客户公司</label><input name="customer" value="{{ r.customer or '' }}"></div>
+        <div class="form-group"><label>渠道</label><input name="channel" value="{{ r.channel or '' }}"></div>
+        <div class="form-group"><label>目的国</label><input name="destination" value="{{ r.destination or '' }}"></div>
+        <div class="form-group"><label>邮编</label><input name="postal_code" value="{{ r.postal_code or '' }}"></div>
+        <div class="form-group"><label>收款金额</label><input name="payment_received" value="{{ r.payment_received or '' }}"></div>
+        <div class="form-group"><label>水单</label><input name="payment_slip" value="{{ r.payment_slip or '' }}"></div>
+        <div class="form-group"><label>收款方式</label><input name="payment_method" value="{{ r.payment_method or '' }}"></div>
+        <div class="form-group"><label>是否开票</label><input name="invoiced" value="{{ r.invoiced or '' }}"></div>
+        <div class="form-group"><label>付款金额</label><input name="payment_amount" value="{{ r.payment_amount or '' }}"></div>
+        <div class="form-group"><label>是否已付</label><input name="is_paid" value="{{ r.is_paid or '' }}"></div>
+        <div class="form-group"><label>杂费</label><input name="misc_fee" value="{{ r.misc_fee or '' }}"></div>
+        <div class="form-group"><label>是否买保险</label><input name="insurance" value="{{ r.insurance or '' }}"></div>
+        <div class="form-group"><label>实重</label><input name="actual_weight" value="{{ r.actual_weight or '' }}"></div>
+        <div class="form-group"><label>材积</label><input name="volume" value="{{ r.volume or '' }}"></div>
+        <div class="form-group"><label>收货总重量</label><input name="total_weight" value="{{ r.total_weight or '' }}"></div>
+        <div class="form-group"><label>件数</label><input name="pieces" value="{{ r.pieces or '' }}"></div>
+        <div class="form-group"><label>出货重量</label><input name="ship_weight" value="{{ r.ship_weight or '' }}"></div>
+        <div class="form-group"><label>毛利</label><input name="gross_profit" value="{{ r.gross_profit or '' }}"></div>
+        <div class="form-group"><label>利率</label><input name="profit_rate" value="{{ r.profit_rate or '' }}"></div>
+        <div class="form-group"><label>代理</label><input name="agent" value="{{ r.agent or '' }}"></div>
+        <div class="form-group"><label>木架</label><input name="wooden_frame" value="{{ r.wooden_frame or '' }}"></div>
+        <div class="form-group"><label>是否单证</label><input name="has_docs" value="{{ r.has_docs or '' }}"></div>
+        <div class="form-group"><label>出货日期</label><input name="ship_date" type="date" value="{{ r.ship_date or '' }}"></div>
+        <div class="form-group full"><label>备注</label><textarea name="remarks">{{ r.remarks or '' }}</textarea></div>
+      </div>
+      <div class="btn-group">
+        <button type="submit" class="btn btn-primary">保存修改</button>
+        <a href="{{ url_for('shipments') }}" class="btn btn-outline">取消</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

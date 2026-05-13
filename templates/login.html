@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>登录 — 雄楚速通运单系统</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="{{ url_for('static', filename='logo.jpg') }}" alt="XCST">
+      <div class="login-title">运单管理系统</div>
+      <div class="login-sub">雄楚速通国际物流</div>
+    </div>
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="POST">
+      <div class="form-group">
+        <label>用户名</label>
+        <input name="username" required autofocus placeholder="请输入用户名">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" name="password" required placeholder="请输入密码">
+      </div>
+      <button type="submit" class="login-btn">登录</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

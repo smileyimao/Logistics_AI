@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}运单修改{% endblock %}
+{% block page_title %}运单修改{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">修改申请</span>
+    {% if session.role in ('admin','finance') %}
+    <div class="btn-group">
+      <a href="?status=pending"  class="btn btn-sm {{ 'btn-primary' if status_filter=='pending'  else 'btn-outline' }}">待审批</a>
+      <a href="?status=approved" class="btn btn-sm {{ 'btn-primary' if status_filter=='approved' else 'btn-outline' }}">已批准</a>
+      <a href="?status=rejected" class="btn btn-sm {{ 'btn-primary' if status_filter=='rejected' else 'btn-outline' }}">已驳回</a>
+    </div>
+    {% endif %}
+  </div>
+  <div style="overflow-x:auto">
+  <table>
+    <thead>
+      <tr>
+        <th>申请时间</th><th>原单号</th><th>申请人</th><th>修改内容</th><th>理由</th>
+        <th>状态</th><th>审批人</th><th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if reqs %}
+        {% for r in reqs %}
+        <tr>
+          <td>{{ r.created_at }}</td>
+          <td><b>{{ r.tracking_no or '-' }}</b></td>
+          <td>{{ r.requested_by }}</td>
+          <td>
+            {% set ch = r.changes | fromjson %}
+            {% for field, vals in ch.items() %}
+            <span class="diff-old">{{ vals.old }}</span> → <span class="diff-new">{{ vals.new }}</span>
+            <small style="color:#9ca3af">({{ field }})</small><br>
+            {% endfor %}
+          </td>
+          <td>{{ r.reason or '-' }}</td>
+          <td>
+            <span class="badge badge-{{ r.status }}">
+              {{ {'pending':'待审批','approved':'已批准','rejected':'已驳回'}.get(r.status, r.status) }}
+            </span>
+          </td>
+          <td>{{ r.reviewed_by or '-' }}</td>
+          <td>
+            {% if session.role in ('admin','finance') and r.status == 'pending' %}
+            <form method="POST" action="/app/edits/{{ r.id }}/review" style="display:inline">
+              <input type="hidden" name="action" value="approve">
+              <button class="btn btn-success btn-sm">批准</button>
+            </form>
+            <form method="POST" action="/app/edits/{{ r.id }}/review" style="display:inline;margin-left:4px">
+              <input type="hidden" name="action" value="reject">
+              <button class="btn btn-danger btn-sm">驳回</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr><td colspan="8" class="empty">暂无修改申请</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

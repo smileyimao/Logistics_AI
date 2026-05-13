@@ -1,0 +1,7 @@
+flask
+requests
+dashscope
+openpyxl
+pystray
+Pillow
+pyinstaller

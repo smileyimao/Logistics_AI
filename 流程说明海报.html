@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=750px">
+<title>运单AI助手</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+    background: #f0f4f8;
+    padding: 24px 16px 40px;
+    width: 750px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #1a56db 0%, #0e3fa5 100%);
+    border-radius: 20px;
+    padding: 36px 32px;
+    color: white;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .header .tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    font-size: 13px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+    letter-spacing: 1px;
+  }
+  .header h1 { font-size: 34px; font-weight: 800; margin-bottom: 10px; }
+  .header p { font-size: 16px; opacity: 0.85; line-height: 1.6; }
+
+  /* ── Pain ── */
+  .pain {
+    background: #fff8e6;
+    border: 1.5px solid #f6c94e;
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .pain .icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+  .pain h3 { font-size: 15px; font-weight: 700; color: #92400e; margin-bottom: 6px; }
+  .pain p { font-size: 14px; color: #a16207; line-height: 1.7; }
+
+  /* ── Cards ── */
+  .card {
+    background: white;
+    border-radius: 20px;
+    padding: 28px 28px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .version-badge {
+    font-size: 12px;
+    font-weight: 800;
+    padding: 4px 12px;
+    border-radius: 8px;
+    letter-spacing: 0.5px;
+  }
+  .v1 .version-badge { background: #dbeafe; color: #1d4ed8; }
+  .v2 .version-badge { background: #d1fae5; color: #065f46; }
+  .card-title { font-size: 20px; font-weight: 800; color: #111827; }
+  .card-sub { font-size: 13px; color: #6b7280; margin-top: 2px; }
+
+  /* ── Flow ── */
+  .flow { margin-bottom: 20px; }
+  .flow-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #9ca3af;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .flow-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .flow-item:last-child { border-bottom: none; }
+  .flow-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .v1 .flow-num { background: #dbeafe; color: #1d4ed8; }
+  .v2 .flow-num { background: #d1fae5; color: #065f46; }
+  .flow-text { font-size: 15px; color: #1f2937; line-height: 1.6; }
+  .flow-text span { color: #6b7280; font-size: 13px; display: block; margin-top: 2px; }
+
+  .arrow {
+    text-align: center;
+    color: #d1d5db;
+    font-size: 20px;
+    padding: 4px 0;
+  }
+
+  /* ── Result box ── */
+  .result-box {
+    background: #f8fafc;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 16px 0;
+  }
+  .result-box .label { font-size: 12px; color: #9ca3af; margin-bottom: 6px; }
+  .result-box .msg {
+    font-size: 15px;
+    color: #111827;
+    font-weight: 500;
+    background: white;
+    border-radius: 8px;
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+  }
+  .result-box .msg.green { border-left: 3px solid #10b981; }
+  .result-box .msg.blue  { border-left: 3px solid #3b82f6; }
+
+  /* ── Export commands ── */
+  .cmd-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .cmd-item {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+  .cmd-item .cmd { font-size: 14px; font-weight: 700; color: #111827; }
+  .cmd-item .desc { font-size: 12px; color: #6b7280; margin-top: 2px; }
+
+  /* ── Trade-off ── */
+  .tradeoff {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .tradeoff-item {
+    flex: 1;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .tradeoff-item.pro { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .tradeoff-item.con { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+  .tradeoff-item strong { display: block; margin-bottom: 4px; }
+
+  /* ── Permission ── */
+  .perm-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 14px;
+  }
+  .perm-row:last-child { border-bottom: none; }
+  .role-tag {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .role-tag.boss { background: #fef3c7; color: #92400e; }
+  .role-tag.staff { background: #e0e7ff; color: #3730a3; }
+  .perm-text { color: #374151; }
+
+  /* ── Compare ── */
+  .compare {
+    background: white;
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .compare h2 { font-size: 18px; font-weight: 800; color: #111827; margin-bottom: 18px; }
+  .compare-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1.5fr;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 14px;
+    align-items: center;
+  }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-row.header-row {
+    font-size: 12px;
+    font-weight: 700;
+    color: #9ca3af;
+    padding-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+  .compare-row .col-label { color: #374151; }
+  .compare-row .col-v1 { text-align: center; color: #1d4ed8; font-weight: 600; }
+  .compare-row .col-v2 { text-align: center; color: #065f46; font-weight: 600; }
+
+  /* ── CTA ── */
+  .cta {
+    background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+    border-radius: 20px;
+    padding: 30px 28px;
+    color: white;
+    text-align: center;
+  }
+  .cta h2 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+  .cta p { font-size: 14px; opacity: 0.7; margin-bottom: 20px; line-height: 1.6; }
+  .cta-badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+  .cta-badge {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+  .cta-badge strong { display: block; font-size: 18px; margin-bottom: 2px; }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #9ca3af;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .divider {
+    height: 1px; background: #e5e7eb; margin: 18px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="tag">跨境物流 · AI 效率工具</div>
+  <h1>运单助手</h1>
+  <p>运单图片发出去，Excel 自动生成<br>告别手动录入，错误率降到零</p>
+</div>
+
+<!-- Pain -->
+<div class="pain">
+  <div class="icon">😓</div>
+  <div>
+    <h3>你现在的状态</h3>
+    <p>员工拍图发群 → 有人盯着群 → 手动录入 Excel → 费时费力，人一走就乱</p>
+  </div>
+</div>
+
+<!-- V1 -->
+<div class="card v1">
+  <div class="card-header">
+    <div class="version-badge">V1 基础版</div>
+    <div>
+      <div class="card-title">关注公众号，今天就能用</div>
+      <div class="card-sub">员工多一个转发动作，其余全自动</div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-label">员工操作</div>
+    <div class="flow-item">
+      <div class="flow-num">1</div>
+      <div class="flow-text">
+        拍运单图片，发到工作群
+        <span>跟现在完全一样，监督作用不变</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num">2</div>
+      <div class="flow-text">
+        同一张图，转发给「运单助手」公众号
+        <span>长按图片 → 转发 → 选公众号，约 3 秒</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-box">
+    <div class="label">公众号自动回复</div>
+    <div class="msg green">✅ 已录入：SF123456789</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="flow">
+    <div class="flow-label">老板操作 — 随时导出 Excel</div>
+  </div>
+
+  <div class="cmd-grid">
+    <div class="cmd-item">
+      <div class="cmd">导出</div>
+      <div class="desc">今天的运单</div>
+    </div>
+    <div class="cmd-item">
+      <div class="cmd">导出本月</div>
+      <div class="desc">本月全部</div>
+    </div>
+    <div class="cmd-item">
+      <div class="cmd">导出上月</div>
+      <div class="desc">上月全部</div>
+    </div>
+    <div class="cmd-item">
+      <div class="cmd">导出全部</div>
+      <div class="desc">所有历史数据</div>
+    </div>
+  </div>
+
+  <div class="result-box" style="margin-top:14px">
+    <div class="label">收到下载链接，点开即下载</div>
+    <div class="msg blue">✅ 本月 Excel 已生成，共 86 条运单　[点击下载]</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-title">权限分工</div>
+  <div class="perm-row">
+    <div class="role-tag boss">老板</div>
+    <div class="perm-text">发图录入 + 随时导出 Excel + 管理员工邀请码</div>
+  </div>
+  <div class="perm-row">
+    <div class="role-tag staff">员工</div>
+    <div class="perm-text">只能发图录入，无法导出，数据安全有保障</div>
+  </div>
+
+  <div class="tradeoff" style="margin-top:16px">
+    <div class="tradeoff-item pro">
+      <strong>✅ 优势</strong>
+      零门槛，今天就能用<br>不需要装任何软件<br>扫码关注即开通
+    </div>
+    <div class="tradeoff-item con">
+      <strong>⚠️ 代价</strong>
+      员工每张单多一个<br>转发动作（约3秒）
+    </div>
+  </div>
+</div>
+
+<!-- V2 -->
+<div class="card v2">
+  <div class="card-header">
+    <div class="version-badge">V2 升级版</div>
+    <div>
+      <div class="card-title">机器人进群，员工零改变</div>
+      <div class="card-sub">迁移到企业微信，全程自动，无需任何额外操作</div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-label">员工操作</div>
+    <div class="flow-item">
+      <div class="flow-num">1</div>
+      <div class="flow-text">
+        拍运单图片，发到企业微信群
+        <span>和现在发微信群完全一样，没有第②步</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-box">
+    <div class="label">机器人自动识别，群里立即回复</div>
+    <div class="msg green">✅ SF123456789 已录入 · 重量 5kg · 收货人 John Smith</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-title">需要做一件事（一次性）</div>
+  <div class="flow-item" style="padding: 12px 0">
+    <div class="flow-num" style="background:#d1fae5;color:#065f46">!</div>
+    <div class="flow-text">
+      工作群从普通微信迁移到企业微信
+      <span>企业微信免费，员工下载后点邀请链接即加入，约 2 分钟。手机可同时装微信 + 企业微信。</span>
+    </div>
+  </div>
+
+  <div class="tradeoff">
+    <div class="tradeoff-item pro">
+      <strong>✅ 优势</strong>
+      员工操作零改变<br>图片发出即自动录入<br>完全无感知
+    </div>
+    <div class="tradeoff-item con">
+      <strong>⚠️ 代价</strong>
+      一次性迁移工作群<br>员工需装企业微信<br>（含协助迁移服务）
+    </div>
+  </div>
+</div>
+
+<!-- Compare -->
+<div class="compare">
+  <h2>两个版本对比</h2>
+  <div class="compare-row header-row">
+    <div></div>
+    <div style="text-align:center">V1 基础版</div>
+    <div style="text-align:center">V2 升级版</div>
+  </div>
+  <div class="compare-row">
+    <div class="col-label">员工额外操作</div>
+    <div class="col-v1">多转发一次</div>
+    <div class="col-v2">无</div>
+  </div>
+  <div class="compare-row">
+    <div class="col-label">需要装新软件</div>
+    <div class="col-v1">不需要</div>
+    <div class="col-v2">装企业微信</div>
+  </div>
+  <div class="compare-row">
+    <div class="col-label">启动难度</div>
+    <div class="col-v1">今天就用</div>
+    <div class="col-v2">一次迁移</div>
+  </div>
+  <div class="compare-row">
+    <div class="col-label">自动化程度</div>
+    <div class="col-v1">95%</div>
+    <div class="col-v2">100%</div>
+  </div>
+  <div class="compare-row">
+    <div class="col-label">月费</div>
+    <div class="col-v1">¥299</div>
+    <div class="col-v2">¥499</div>
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="cta">
+  <h2>7 天免费试用</h2>
+  <p>先试再决定，无需绑定付款<br>试用期内体验全部功能，觉得好再订阅</p>
+  <div class="cta-badges">
+    <div class="cta-badge">
+      <strong>V1</strong>
+      ¥299 / 月
+    </div>
+    <div class="cta-badge">
+      <strong>V2</strong>
+      ¥499 / 月
+    </div>
+    <div class="cta-badge">
+      <strong>试用</strong>
+      7天免费
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

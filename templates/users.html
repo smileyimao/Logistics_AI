@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}用户管理{% endblock %}
+{% block page_title %}用户管理{% endblock %}
+
+{% block content %}
+{% if msg %}
+<div class="alert alert-{{ msg_type }}">{{ msg }}</div>
+{% endif %}
+
+<div class="panel" style="margin-bottom:20px">
+  <div class="panel-header"><span class="panel-title">新建用户</span></div>
+  <div class="panel-body">
+    <form method="POST">
+      <input type="hidden" name="action" value="create">
+      <div class="form-grid">
+        <div class="form-group"><label>用户名</label><input name="username" required></div>
+        <div class="form-group"><label>显示名称</label><input name="display_name"></div>
+        <div class="form-group"><label>密码</label><input type="password" name="password" required></div>
+        <div class="form-group"><label>角色</label>
+          <select name="role">
+            <option value="staff">员工 (Staff)</option>
+            <option value="finance">财务 (Finance)</option>
+            <option value="admin">管理员 (Admin)</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">创建用户</button>
+    </form>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">用户列表</span></div>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>用户名</th><th>显示名称</th><th>角色</th><th>状态</th><th>创建时间</th><th>操作</th></tr>
+    </thead>
+    <tbody>
+      {% if all_users %}
+        {% for u in all_users %}
+        <tr>
+          <td>{{ u.id }}</td>
+          <td><b>{{ u.username }}</b></td>
+          <td>{{ u.display_name or '-' }}</td>
+          <td><span class="badge badge-{{ u.role }}">{{ {'admin':'管理员','finance':'财务','staff':'员工'}.get(u.role,'') }}</span></td>
+          <td><span class="badge badge-{{ 'active' if u.active else 'inactive' }}">{{ '正常' if u.active else '已停用' }}</span></td>
+          <td>{{ u.created_at }}</td>
+          <td>
+            {% if u.username != session.user %}
+            <form method="POST" style="display:inline">
+              <input type="hidden" name="action" value="toggle">
+              <input type="hidden" name="uid" value="{{ u.id }}">
+              <button class="btn btn-outline btn-sm">{{ '停用' if u.active else '启用' }}</button>
+            </form>
+            {% endif %}
+            <form method="POST" style="display:inline;margin-left:4px">
+              <input type="hidden" name="action" value="reset_pw">
+              <input type="hidden" name="uid" value="{{ u.id }}">
+              <input name="new_pw" placeholder="新密码" style="width:100px;padding:4px 8px;border:1px solid #e5e7eb;border-radius:5px;font-size:12px">
+              <button class="btn btn-outline btn-sm">重置</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr><td colspan="7" class="empty">暂无用户</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

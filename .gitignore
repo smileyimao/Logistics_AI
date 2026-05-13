@@ -1,0 +1,9 @@
+*.db
+*.pyc
+__pycache__/
+temp_excel/
+uploads/
+*.log
+.env
+venv/
+.DS_Store

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}上传中心{% endblock %}
+{% block page_title %}上传中心{% endblock %}
+
+{% block content %}
+{% if msg %}
+<div class="alert alert-{{ msg_type }}">{{ msg }}</div>
+{% endif %}
+
+<div class="panel" style="margin-bottom:20px">
+  <div class="panel-header"><span class="panel-title">📷 图片上传（AI识别）</span></div>
+  <div class="panel-body">
+    <form method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="action" value="image">
+      <div id="drop-zone" onclick="document.getElementById('img-input').click()" style="
+        border:2px dashed #d1d5db;border-radius:12px;padding:48px 24px;text-align:center;
+        cursor:pointer;transition:all 0.2s;background:#fafafa;margin-bottom:16px">
+        <div style="font-size:40px;margin-bottom:10px">📷</div>
+        <div style="font-size:15px;font-weight:600;color:#374151;margin-bottom:4px">点击选择运单图片</div>
+        <div id="file-name" style="font-size:13px;color:#9ca3af">支持 JPG / PNG，AI自动识别所有字段</div>
+      </div>
+      <input type="file" id="img-input" name="image" accept="image/*" style="display:none"
+        onchange="document.getElementById('file-name').textContent=this.files[0]?this.files[0].name:'未选择';
+                  document.getElementById('drop-zone').style.borderColor=this.files[0]?'#0f2044':'#d1d5db'">
+      <button type="submit" class="btn btn-primary" style="width:100%">上传并识别</button>
+    </form>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">✍️ 手动录入</span></div>
+  <div class="panel-body">
+    <form method="POST">
+      <input type="hidden" name="action" value="manual">
+      <div class="form-grid">
+        <div class="form-group"><label>业务员</label><input name="salesperson"></div>
+        <div class="form-group"><label>客户公司</label><input name="customer"></div>
+        <div class="form-group"><label>原单号</label><input name="tracking_no" placeholder="必填"></div>
+        <div class="form-group"><label>转单号</label><input name="transfer_no"></div>
+        <div class="form-group"><label>渠道</label><input name="channel"></div>
+        <div class="form-group"><label>目的国</label><input name="destination"></div>
+        <div class="form-group"><label>邮编</label><input name="postal_code"></div>
+        <div class="form-group"><label>收款金额</label><input name="payment_received"></div>
+        <div class="form-group"><label>水单</label><input name="payment_slip"></div>
+        <div class="form-group"><label>收款方式</label><input name="payment_method"></div>
+        <div class="form-group"><label>是否开票</label><input name="invoiced"></div>
+        <div class="form-group"><label>付款金额</label><input name="payment_amount"></div>
+        <div class="form-group"><label>是否已付</label><input name="is_paid"></div>
+        <div class="form-group"><label>杂费</label><input name="misc_fee"></div>
+        <div class="form-group"><label>是否买保险</label><input name="insurance"></div>
+        <div class="form-group"><label>实重</label><input name="actual_weight"></div>
+        <div class="form-group"><label>材积</label><input name="volume"></div>
+        <div class="form-group"><label>收货总重量(kg)</label><input name="total_weight"></div>
+        <div class="form-group"><label>件数</label><input name="pieces"></div>
+        <div class="form-group"><label>出货重量</label><input name="ship_weight"></div>
+        <div class="form-group"><label>毛利</label><input name="gross_profit"></div>
+        <div class="form-group"><label>利率</label><input name="profit_rate"></div>
+        <div class="form-group"><label>代理</label><input name="agent"></div>
+        <div class="form-group"><label>木架</label><input name="wooden_frame"></div>
+        <div class="form-group"><label>是否单证</label><input name="has_docs"></div>
+        <div class="form-group"><label>出货日期</label><input name="ship_date" type="date"></div>
+        <div class="form-group full"><label>备注</label><textarea name="remarks"></textarea></div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%">录入运单</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

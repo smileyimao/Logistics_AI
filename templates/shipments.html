@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+{% block title %}运单管理{% endblock %}
+{% block page_title %}运单管理{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/styles/ag-theme-alpine.css">
+{% endblock %}
+
+{% block content %}
+<div class="ship-page">
+
+  <!-- ── Filter bar ── -->
+  <div class="filter-bar">
+    <form method="GET" style="display:contents">
+      <input name="q" value="{{ q }}" placeholder="搜索原单号/转单号/客户" style="width:200px">
+      <input type="date" name="start" value="{{ start }}">
+      <input type="date" name="end"   value="{{ end }}">
+      {% if agents %}
+      <select name="agent" style="width:110px">
+        <option value="">全部代理</option>
+        {% for a in agents %}<option value="{{ a }}" {{ 'selected' if request.args.get('agent')==a }}>{{ a }}</option>{% endfor %}
+      </select>
+      {% endif %}
+      {% if channels %}
+      <select name="channel" style="width:120px">
+        <option value="">全部渠道</option>
+        {% for c in channels %}<option value="{{ c }}" {{ 'selected' if request.args.get('channel')==c }}>{{ c }}</option>{% endfor %}
+      </select>
+      {% endif %}
+      <button type="submit" class="btn btn-primary btn-sm">查询</button>
+      <a href="{{ url_for('shipments') }}" class="btn btn-sm">重置</a>
+    </form>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:auto">
+      {% if can_export %}
+      <a href="{{ url_for('export', range='today') }}" class="btn btn-sm">今日</a>
+      <a href="{{ url_for('export', range='month') }}" class="btn btn-sm">本月</a>
+      <a href="{{ url_for('export', range='all') }}"   class="btn btn-sm btn-gold">导出全部</a>
+      {% endif %}
+      <button class="btn btn-sm" onclick="gridApi.openToolPanel('columns')">⚙ 列设置</button>
+      <button class="btn btn-sm" id="mask-toggle-btn" onclick="toggleMaskPanel()">🔒 遮罩</button>
+    </div>
+  </div>
+
+  <!-- ── Mask panel ── -->
+  <div id="mask-panel" style="display:none;padding:8px 16px;background:#f0f5ff;border-bottom:1px solid #c7d8fd;flex-wrap:wrap;gap:6px;align-items:center">
+    <span style="font-size:12px;color:#4c80f6;font-weight:600">遮罩敏感字段（点击切换）：</span>
+    <button class="mask-btn" data-field="customer"         data-label="客户公司">客户公司</button>
+    <button class="mask-btn" data-field="salesperson"      data-label="业务员">业务员</button>
+    <button class="mask-btn" data-field="payment_received" data-label="收款金额">收款金额</button>
+    <button class="mask-btn" data-field="payment_method"   data-label="收款方式">收款方式</button>
+    <button class="mask-btn" data-field="payment_amount"   data-label="付款金额">付款金额</button>
+    <button class="mask-btn" data-field="is_paid"          data-label="是否已付">是否已付</button>
+    <button class="mask-btn" data-field="misc_fee"         data-label="杂费">杂费</button>
+    <button class="mask-btn" data-field="gross_profit"     data-label="毛利">毛利</button>
+    <button class="mask-btn" data-field="profit_rate"      data-label="利率">利率</button>
+  </div>
+
+  <!-- ── Table + detail panel ── -->
+  <div class="ship-body">
+    <div id="myGrid" class="ag-theme-alpine" style="flex:1;min-width:0;height:100%"></div>
+
+    <!-- Detail side panel -->
+    <div id="detail-panel" class="detail-panel">
+      <div class="detail-head">
+        <span>运单详情</span>
+        <button onclick="closeDetail()" class="detail-close">×</button>
+      </div>
+      <div id="detail-body" class="detail-body"></div>
+    </div>
+  </div>
+
+  <!-- ── Status bar ── -->
+  <div class="ship-status">
+    <span>共 {{ total }} 条</span>
+    <span id="status-msg">点击行查看详情</span>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/dist/ag-grid-community.min.js"></script>
+<script>
+var RAW      = {{ rows_json | safe }};
+var CAN_EDIT = {{ 'true' if can_edit_direct else 'false' }};
+var masked   = {};
+var gridApi;
+
+/* ── Column definitions ── */
+function val(v) { return (v !== null && v !== undefined && v !== '') ? v : '—'; }
+function maskedCell(field) {
+  return function(p) {
+    return masked[field]
+      ? '<span style="color:#c8cce6;letter-spacing:3px;font-size:11px">●●●</span>'
+      : val(p.value);
+  };
+}
+function boldCell(p)  { return p.value ? '<b>' + p.value + '</b>' : '<span style="color:#c8cce6">—</span>'; }
+function sourceCell(p){
+  if (!p.value) return '<span style="color:#c8cce6">—</span>';
+  var cls = p.value.includes('bot') ? 'badge badge-bot' : 'badge badge-web';
+  return '<span class="' + cls + '">' + p.value + '</span>';
+}
+function actionCell(p){
+  var id = p.data.id;
+  var href = CAN_EDIT ? '/app/shipments/' + id + '/edit' : '/app/edits/new/' + id;
+  var lbl  = CAN_EDIT ? '编辑' : '申请';
+  return '<a href="' + href + '" class="grid-edit-btn" onclick="event.stopPropagation()">' + lbl + '</a>';
+}
+
+var COL_DEFS = [
+  { field:'created_at',       headerName:'时间',      pinned:'left', width:165, lockPinned:true, cellRenderer:function(p){return val(p.value);} },
+  { field:'tracking_no',      headerName:'原单号',    pinned:'left', width:160, lockPinned:true, cellRenderer:boldCell },
+  { field:'salesperson',      headerName:'业务员',    width:90,  cellRenderer:maskedCell('salesperson') },
+  { field:'customer',         headerName:'客户公司',  width:130, cellRenderer:maskedCell('customer') },
+  { field:'transfer_no',      headerName:'转单号',    width:155 },
+  { field:'channel',          headerName:'渠道',      width:175 },
+  { field:'destination',      headerName:'目的国',    width:85 },
+  { field:'postal_code',      headerName:'邮编',      width:80,  hide:true },
+  { field:'pieces',           headerName:'件数',      width:60 },
+  { field:'actual_weight',    headerName:'实重',      width:75 },
+  { field:'total_weight',     headerName:'收货总重',  width:90 },
+  { field:'ship_weight',      headerName:'出货重',    width:80 },
+  { field:'payment_received', headerName:'收款金额',  width:95,  cellRenderer:maskedCell('payment_received') },
+  { field:'payment_method',   headerName:'收款方式',  width:95,  cellRenderer:maskedCell('payment_method') },
+  { field:'payment_amount',   headerName:'付款金额',  width:95,  cellRenderer:maskedCell('payment_amount') },
+  { field:'is_paid',          headerName:'是否已付',  width:85,  cellRenderer:maskedCell('is_paid') },
+  { field:'misc_fee',         headerName:'杂费',      width:75,  cellRenderer:maskedCell('misc_fee') },
+  { field:'gross_profit',     headerName:'毛利',      width:80,  cellRenderer:maskedCell('gross_profit') },
+  { field:'profit_rate',      headerName:'利率',      width:70,  hide:true, cellRenderer:maskedCell('profit_rate') },
+  { field:'agent',            headerName:'代理',      width:105 },
+  { field:'ship_date',        headerName:'出货日期',  width:100 },
+  { field:'remarks',          headerName:'备注',      width:150 },
+  { field:'invoiced',         headerName:'是否开票',  width:85,  hide:true },
+  { field:'payment_slip',     headerName:'水单',      width:90,  hide:true },
+  { field:'insurance',        headerName:'买保险',    width:75,  hide:true },
+  { field:'wooden_frame',     headerName:'木架',      width:70,  hide:true },
+  { field:'has_docs',         headerName:'是否单证',  width:85,  hide:true },
+  { field:'volume',           headerName:'材积',      width:70,  hide:true },
+  { field:'source',           headerName:'来源',      width:75,  cellRenderer:sourceCell },
+  { field:'created_by',       headerName:'录入人',    width:85,  hide:true },
+  { field:'id', headerName:'操作', width:75, pinned:'right', lockPinned:true, sortable:false, filter:false, resizable:false, cellRenderer:actionCell },
+];
+
+/* ── Grid init ── */
+var gridOptions = {
+  columnDefs: COL_DEFS,
+  rowData: RAW,
+  rowHeight: 40,
+  headerHeight: 44,
+  domLayout: 'normal',
+  suppressMovableColumns: false,
+  suppressContextMenu: true,
+  defaultColDef: {
+    sortable: true,
+    resizable: true,
+    filter: false,
+    cellStyle: { fontSize: '13px', color: '#252b3a', display: 'flex', alignItems: 'center' },
+  },
+  sideBar: {
+    toolPanels: [{
+      id: 'columns',
+      labelDefault: '列设置',
+      toolPanel: 'agColumnsToolPanel',
+      toolPanelParams: { suppressRowGroups:true, suppressValues:true, suppressPivots:true, suppressPivotMode:true }
+    }],
+    defaultToolPanel: ''
+  },
+  onRowClicked: function(e) { showDetail(e.data); },
+  onGridReady: function(e) {
+    gridApi = e.api;
+    var saved = localStorage.getItem('xcst_ag_cols');
+    if (saved) { try { gridApi.applyColumnState({ state: JSON.parse(saved), applyOrder: true }); } catch(ex){} }
+  },
+  onColumnVisible:     saveColState,
+  onColumnMoved:       saveColState,
+  onColumnResized:     saveColState,
+  onColumnPinned:      saveColState,
+  rowClassRules: {
+    'ag-row-selected': function(p) { return p.data && selectedId === p.data.id; }
+  },
+};
+
+var selectedId = null;
+document.addEventListener('DOMContentLoaded', function() {
+  var el = document.getElementById('myGrid');
+  gridApi = agGrid.createGrid(el, gridOptions);
+});
+
+function saveColState() {
+  if (!gridApi) return;
+  try { localStorage.setItem('xcst_ag_cols', JSON.stringify(gridApi.getColumnState())); } catch(e) {}
+}
+
+/* ── Detail panel ── */
+function showDetail(row) {
+  selectedId = row.id;
+  gridApi.redrawRows();
+  document.getElementById('status-msg').textContent = '已选：' + (row.tracking_no || row.id);
+  document.getElementById('detail-panel').classList.add('open');
+
+  function v(x) { return (x !== null && x !== undefined && x !== '') ? x : '—'; }
+  function row2(l1,v1,l2,v2) {
+    return '<div class="dp-row"><div class="dp-cell"><div class="dp-lbl">'+l1+'</div><div class="dp-val">'+v(v1)+'</div></div>'
+         + '<div class="dp-cell"><div class="dp-lbl">'+l2+'</div><div class="dp-val">'+v(v2)+'</div></div></div>';
+  }
+  function sec(t) { return '<div class="dp-sec">'+t+'</div>'; }
+
+  var h = sec('基本信息')
+    + row2('原单号', row.tracking_no, '转单号', row.transfer_no)
+    + row2('渠道',   row.channel,     '目的国', row.destination)
+    + row2('邮编',   row.postal_code, '客户公司', row.customer)
+    + row2('业务员', row.salesperson, '代理',   row.agent)
+    + row2('来源',   row.source,      '录入人', row.created_by)
+    + row2('录入时间', row.created_at, '出货日期', row.ship_date)
+    + sec('重量 & 货物')
+    + row2('件数',   row.pieces,       '实重(KG)',  row.actual_weight)
+    + row2('收货总重', row.total_weight, '出货重量', row.ship_weight)
+    + row2('材积',   row.volume,       '木架',     row.wooden_frame)
+    + row2('是否单证', row.has_docs,   '买保险',   row.insurance)
+    + sec('财务')
+    + row2('收款金额', row.payment_received, '收款方式', row.payment_method)
+    + row2('付款金额', row.payment_amount,   '是否已付', row.is_paid)
+    + row2('杂费',   row.misc_fee,    '毛利',    row.gross_profit)
+    + row2('利率',   row.profit_rate, '是否开票', row.invoiced)
+    + row2('水单',   row.payment_slip, '',        '');
+
+  if (row.remarks) h += sec('备注') + '<div class="dp-remarks">' + row.remarks + '</div>';
+
+  h += '<div style="padding:12px 14px">';
+  if (CAN_EDIT) {
+    h += '<a href="/app/shipments/' + row.id + '/edit" style="display:block;text-align:center;padding:9px;background:#4c80f6;color:#fff;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none">✎ 编辑运单</a>';
+  }
+  h += '</div>';
+
+  document.getElementById('detail-body').innerHTML = h;
+}
+
+function closeDetail() {
+  selectedId = null;
+  gridApi.redrawRows();
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('status-msg').textContent = '点击行查看详情';
+}
+
+/* ── Mask panel: hide/show entire column ── */
+function toggleMaskPanel() {
+  var p = document.getElementById('mask-panel');
+  p.style.display = p.style.display === 'none' ? 'flex' : 'none';
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.classList.contains('mask-btn')) return;
+  var f    = e.target.dataset.field;
+  var hide = !masked[f];
+  masked[f] = hide;
+  e.target.classList.toggle('active', hide);
+  e.target.textContent = (hide ? '🙈 ' : '') + e.target.getAttribute('data-label');
+  // hide or show the entire column
+  if (gridApi) gridApi.setColumnVisible(f, !hide);
+});
+</script>
+
+<style>
+/* ── Page scaffold ── */
+.ship-page {
+  display: flex; flex-direction: column;
+  height: calc(100vh - 54px - 40px);
+  background: white; border-radius: 10px;
+  border: 1px solid #ebedf5;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  overflow: hidden;
+}
+.ship-body {
+  flex: 1; display: flex; overflow: hidden; min-height: 0; position: relative;
+}
+.ship-status {
+  flex-shrink: 0; padding: 5px 16px;
+  font-size: 12px; color: #8c8fa3;
+  border-top: 1px solid #ebedf5; background: #fafafa;
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+/* ── AG Grid theme overrides ── */
+.ag-theme-alpine {
+  --ag-font-family: -apple-system, "PingFang SC", sans-serif;
+  --ag-font-size: 13px;
+  --ag-row-height: 40px;
+  --ag-header-height: 44px;
+  --ag-border-color: #ebedf5;
+  --ag-header-background-color: #fafafa;
+  --ag-odd-row-background-color: #fff;
+  --ag-row-hover-color: #f0f5ff;
+  --ag-selected-row-background-color: #e8f0fe;
+  --ag-header-foreground-color: #8c8fa3;
+  --ag-foreground-color: #252b3a;
+  --ag-alpine-active-color: #4c80f6;
+  --ag-range-selection-border-color: #4c80f6;
+  --ag-cell-horizontal-border: solid #f0f4f8;
+}
+.ag-theme-alpine .ag-header-cell-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+.ag-theme-alpine .ag-pinned-left-cols-container  { box-shadow: 3px 0 8px rgba(0,0,0,0.07); }
+.ag-theme-alpine .ag-pinned-right-cols-container { box-shadow: -3px 0 8px rgba(0,0,0,0.07); }
+.ag-theme-alpine .ag-row-selected .ag-cell { background: #e8f0fe; }
+.ag-row-selected { background: #e8f0fe !important; }
+.grid-edit-btn {
+  display: inline-block; padding: 2px 9px;
+  border: 1px solid #ebedf5; border-radius: 4px;
+  font-size: 12px; color: #374151; background: #fff; text-decoration: none;
+}
+.grid-edit-btn:hover { border-color: #4c80f6; color: #4c80f6; }
+
+/* ── Detail panel ── */
+.detail-panel {
+  width: 0; overflow: hidden; flex-shrink: 0;
+  border-left: 1px solid #ebedf5;
+  transition: width 0.2s ease; background: #fff;
+  display: flex; flex-direction: column;
+}
+.detail-panel.open { width: 380px; overflow-y: auto; }
+.detail-head {
+  position: sticky; top: 0; background: #fff; z-index: 1; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; border-bottom: 1px solid #ebedf5;
+  font-size: 14px; font-weight: 700; color: #252b3a;
+}
+.detail-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #8c8fa3; line-height: 1; }
+.detail-body  { flex: 1; overflow-y: auto; }
+.dp-sec  { font-size: 11px; font-weight: 700; color: #8c8fa3; text-transform: uppercase; letter-spacing: .5px; padding: 11px 14px 5px; border-bottom: 1px solid #ebedf5; }
+.dp-row  { display: flex; border-bottom: 1px solid #f4f6fc; }
+.dp-cell { flex: 1; padding: 8px 14px; min-width: 0; }
+.dp-lbl  { font-size: 11px; color: #8c8fa3; margin-bottom: 2px; }
+.dp-val  { font-size: 13px; color: #252b3a; font-weight: 500; word-break: break-all; }
+.dp-remarks { padding: 10px 14px; font-size: 13px; color: #374151; line-height: 1.6; white-space: pre-wrap; }
+
+/* ── Mask bar ── */
+.mask-btn {
+  padding: 3px 10px; border-radius: 5px; font-size: 12px;
+  border: 1px solid #c7d8fd; background: white; color: #4c80f6;
+  cursor: pointer; transition: all 0.12s;
+}
+.mask-btn.active  { background: #4c80f6; color: white; border-color: #4c80f6; }
+.mask-btn:hover   { background: #e8f0fe; }
+.mask-btn.active:hover { background: #3a6ee0; }
+</style>
+{% endblock %}
