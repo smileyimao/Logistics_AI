@@ -189,9 +189,9 @@ var gridOptions = {
     }],
     defaultToolPanel: ''
   },
-  onCellClicked: function(e) {
-    if (e.column.getColId() === '_check') return; // checkbox column handled by AG Grid
-    if (e.column.getColId() === 'id') return;     // action column
+  onCellDoubleClicked: function(e) {
+    if (e.column.getColId() === '_check') return;
+    if (e.column.getColId() === 'id') return;
     showDetail(e.data);
   },
   onSelectionChanged: function() {
