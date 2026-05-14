@@ -37,9 +37,24 @@
       <a href="{{ url_for('export', range='month') }}" class="btn btn-sm">本月</a>
       <a href="{{ url_for('export', range='all') }}"   class="btn btn-sm btn-gold">导出全部</a>
       {% endif %}
+      <button class="btn btn-sm" onclick="toggleQfBar()">🔍 快速筛选</button>
       <button class="btn btn-sm" onclick="gridApi.openToolPanel('columns')">⚙ 列设置</button>
       <button class="btn btn-sm" id="mask-toggle-btn" onclick="toggleMaskPanel()">🔒 遮罩</button>
     </div>
+  </div>
+
+  <!-- ── Quick filter bar ── -->
+  <div id="qf-bar" style="display:none;padding:7px 16px;background:#fafafa;border-bottom:1px solid #ebedf5;flex-wrap:wrap;gap:6px;align-items:center">
+    <span style="font-size:12px;color:#8c8fa3;white-space:nowrap">快速筛选：</span>
+    <button class="qf-trigger" data-field="salesperson"     data-label="业务员">业务员 ▾</button>
+    <button class="qf-trigger" data-field="customer"        data-label="客户公司">客户公司 ▾</button>
+    <button class="qf-trigger" data-field="agent"           data-label="代理">代理 ▾</button>
+    <button class="qf-trigger" data-field="channel"         data-label="渠道">渠道 ▾</button>
+    <button class="qf-trigger" data-field="destination"     data-label="目的国">目的国 ▾</button>
+    <button class="qf-trigger" data-field="payment_method"  data-label="收款方式">收款方式 ▾</button>
+    <button class="qf-trigger" data-field="is_paid"         data-label="是否已付">是否已付 ▾</button>
+    <div id="qf-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+    <button id="qf-clear" onclick="clearAllFilters()" style="display:none;margin-left:4px" class="qf-clear-btn">✕ 清除全部</button>
   </div>
 
   <!-- ── Mask panel ── -->
@@ -244,6 +259,128 @@ function closeDetail() {
   document.getElementById('status-msg').textContent = '点击行查看详情';
 }
 
+/* ── Quick filter ── */
+var activeFilters = {};   // { field: value }
+var qfPopup = null;
+
+// Hook into AG Grid external filter
+gridOptions.isExternalFilterPresent = function() {
+  return Object.keys(activeFilters).length > 0;
+};
+gridOptions.doesExternalFilterPass = function(node) {
+  for (var f in activeFilters) {
+    var expected = activeFilters[f];
+    var actual   = String(node.data[f] || '');
+    if (actual !== expected) return false;
+  }
+  return true;
+};
+
+function toggleQfBar() {
+  var bar = document.getElementById('qf-bar');
+  bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
+}
+
+document.addEventListener('click', function(e) {
+  // close popup if clicking outside
+  if (qfPopup && !qfPopup.contains(e.target) && !e.target.classList.contains('qf-trigger')) {
+    qfPopup.remove(); qfPopup = null;
+  }
+  if (!e.target.classList.contains('qf-trigger')) return;
+
+  var field = e.target.dataset.field;
+  var label = e.target.dataset.label;
+
+  // close existing
+  if (qfPopup) { qfPopup.remove(); qfPopup = null; }
+
+  // count unique values from ALL raw data
+  var counts = {};
+  RAW.forEach(function(row) {
+    var v = (row[field] !== null && row[field] !== undefined && row[field] !== '') ? String(row[field]) : '（空）';
+    counts[v] = (counts[v] || 0) + 1;
+  });
+
+  // sort by count desc
+  var entries = Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; });
+
+  // build popup
+  var popup = document.createElement('div');
+  popup.className = 'qf-popup';
+  var current = activeFilters[field];
+
+  var html = '<div class="qf-popup-head">' + label + ' <span style="color:#8c8fa3;font-size:11px">共 '+entries.length+' 个值</span></div>';
+  html += '<div class="qf-popup-list">';
+  // "全部" option
+  html += '<div class="qf-option'+(current===undefined?' qf-active':'')+'" data-field="'+field+'" data-value="">'
+        + '<span>全部</span><span class="qf-count">'+RAW.length+'</span></div>';
+  entries.forEach(function(v) {
+    var active = current === v ? ' qf-active' : '';
+    html += '<div class="qf-option'+active+'" data-field="'+field+'" data-value="'+v+'">'
+          + '<span class="qf-val-txt">'+v+'</span><span class="qf-count">'+counts[v]+'</span></div>';
+  });
+  html += '</div>';
+  popup.innerHTML = html;
+
+  // position below the trigger button
+  var rect = e.target.getBoundingClientRect();
+  popup.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+  popup.style.left = (rect.left   + window.scrollX) + 'px';
+  document.body.appendChild(popup);
+  qfPopup = popup;
+
+  // click inside popup
+  popup.addEventListener('click', function(ev) {
+    var opt = ev.target.closest('.qf-option');
+    if (!opt) return;
+    var f = opt.dataset.field;
+    var v = opt.dataset.value;
+    if (v === '') {
+      delete activeFilters[f];
+    } else {
+      activeFilters[f] = v;
+    }
+    if (gridApi) gridApi.onFilterChanged();
+    updateFilterChips();
+    popup.remove(); qfPopup = null;
+  });
+});
+
+function updateFilterChips() {
+  var chips = document.getElementById('qf-chips');
+  var clearBtn = document.getElementById('qf-clear');
+  chips.innerHTML = '';
+  var fields = Object.keys(activeFilters);
+  fields.forEach(function(f) {
+    var labels = {salesperson:'业务员',customer:'客户公司',agent:'代理',
+                  channel:'渠道',destination:'目的国',payment_method:'收款方式',is_paid:'是否已付'};
+    var chip = document.createElement('span');
+    chip.className = 'qf-chip';
+    chip.innerHTML = labels[f]+': <b>'+activeFilters[f]+'</b> <span onclick="removeFilter(\''+f+'\')" style="cursor:pointer;margin-left:3px">×</span>';
+    chips.appendChild(chip);
+  });
+  clearBtn.style.display = fields.length ? 'inline-flex' : 'none';
+  // update status
+  if (gridApi) {
+    var showing = 0;
+    gridApi.forEachNodeAfterFilter(function(){ showing++; });
+    document.getElementById('status-msg').textContent =
+      fields.length ? '筛选结果：' + showing + ' 条' : '点击行查看详情';
+  }
+}
+
+function removeFilter(field) {
+  delete activeFilters[field];
+  if (gridApi) gridApi.onFilterChanged();
+  updateFilterChips();
+}
+
+function clearAllFilters() {
+  activeFilters = {};
+  if (gridApi) gridApi.onFilterChanged();
+  updateFilterChips();
+}
+
 /* ── Mask panel: hide/show entire column ── */
 function toggleMaskPanel() {
   var p = document.getElementById('mask-panel');
@@ -333,6 +470,49 @@ document.addEventListener('click', function(e) {
 .dp-lbl  { font-size: 11px; color: #8c8fa3; margin-bottom: 2px; }
 .dp-val  { font-size: 13px; color: #252b3a; font-weight: 500; word-break: break-all; }
 .dp-remarks { padding: 10px 14px; font-size: 13px; color: #374151; line-height: 1.6; white-space: pre-wrap; }
+
+/* ── Quick filter ── */
+.qf-trigger {
+  padding: 4px 10px; border-radius: 5px; font-size: 12px;
+  border: 1px solid #ebedf5; background: white; color: #374151;
+  cursor: pointer; transition: all 0.12s; white-space: nowrap;
+}
+.qf-trigger:hover { border-color: #4c80f6; color: #4c80f6; background: #f0f5ff; }
+.qf-popup {
+  position: absolute; z-index: 9999;
+  background: white; border: 1px solid #ebedf5; border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 220px; max-width: 280px;
+  overflow: hidden;
+}
+.qf-popup-head {
+  padding: 10px 14px; font-size: 13px; font-weight: 700; color: #252b3a;
+  border-bottom: 1px solid #ebedf5; background: #fafafa;
+}
+.qf-popup-list { max-height: 300px; overflow-y: auto; }
+.qf-option {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; cursor: pointer; font-size: 13px; color: #374151;
+  transition: background 0.1s;
+}
+.qf-option:hover   { background: #f0f5ff; }
+.qf-option.qf-active { background: #e8f0fe; color: #4c80f6; font-weight: 600; }
+.qf-val-txt { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px; }
+.qf-count {
+  flex-shrink: 0; background: #4c80f6; color: white;
+  border-radius: 10px; padding: 1px 7px; font-size: 11px; font-weight: 700;
+}
+.qf-option.qf-active .qf-count { background: #3a6ee0; }
+.qf-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; background: #e8f0fe; color: #1e40af;
+  border-radius: 12px; font-size: 12px; border: 1px solid #bcd0fc;
+}
+.qf-clear-btn {
+  padding: 3px 10px; border-radius: 5px; font-size: 12px;
+  border: 1px solid #fecaca; background: #fef2f2; color: #ef4444;
+  cursor: pointer; display: inline-flex; align-items: center;
+}
+.qf-clear-btn:hover { background: #fee2e2; }
 
 /* ── Mask bar ── */
 .mask-btn {
