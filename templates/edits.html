@@ -31,10 +31,14 @@
           <td>{{ r.requested_by }}</td>
           <td>
             {% set ch = r.changes | fromjson %}
-            {% for field, vals in ch.items() %}
-            <span class="diff-old">{{ vals.old }}</span> → <span class="diff-new">{{ vals.new }}</span>
-            <small style="color:#9ca3af">({{ field }})</small><br>
-            {% endfor %}
+            {% if ch.get('__action') == 'delete' %}
+              <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600">🗑 申请删除运单</span>
+            {% else %}
+              {% for field, vals in ch.items() %}
+              <span class="diff-old">{{ vals.old }}</span> → <span class="diff-new">{{ vals.new }}</span>
+              <small style="color:#9ca3af">({{ field }})</small><br>
+              {% endfor %}
+            {% endif %}
           </td>
           <td>{{ r.reason or '-' }}</td>
           <td>

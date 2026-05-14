@@ -471,6 +471,38 @@ def edit_shipment(sid):
     r = dict(r); conn.close()
     return render_template('edit_shipment.html', active='shipments', r=r)
 
+# ── Delete shipment (admin/finance direct) ────────────────────────
+@app.route("/app/shipments/<int:sid>/delete", methods=["POST"])
+@roles('admin','finance')
+def delete_shipment(sid):
+    conn = db()
+    r = conn.execute("SELECT tracking_no FROM shipments WHERE id=?", (sid,)).fetchone()
+    if r:
+        conn.execute("DELETE FROM shipments WHERE id=?", (sid,))
+        conn.execute("DELETE FROM edit_requests WHERE shipment_id=?", (sid,))
+        conn.execute("DELETE FROM cell_colors WHERE shipment_id=?", (sid,))
+        conn.commit()
+        log_action(session['user'], '删除运单', f"ID:{sid} 单号:{r['tracking_no']}")
+    conn.close()
+    return redirect(url_for('shipments'))
+
+# ── Request delete (staff) ────────────────────────────────────────
+@app.route("/app/shipments/<int:sid>/request-delete", methods=["POST"])
+@login_required
+def request_delete_shipment(sid):
+    reason = request.form.get('reason','').strip()
+    conn = db()
+    r = conn.execute("SELECT tracking_no FROM shipments WHERE id=?", (sid,)).fetchone()
+    if r:
+        conn.execute(
+            "INSERT INTO edit_requests (shipment_id, changes, reason, requested_by) VALUES (?,?,?,?)",
+            (sid, json.dumps({"__action":"delete"}, ensure_ascii=False), reason, session['user'])
+        )
+        conn.commit()
+        log_action(session['user'], '申请删除运单', f"ID:{sid} 原因:{reason}")
+    conn.close()
+    return redirect(url_for('edits'))
+
 # ── Upload ────────────────────────────────────────────────────────
 @app.route("/app/upload", methods=["GET","POST"])
 @login_required
@@ -557,12 +589,20 @@ def review_edit(eid):
                  (status, session['user'], eid))
     if status=='approved':
         changes=json.loads(er['changes'])
-        field_map={'原单号':'tracking_no','转单号':'transfer_no','业务员':'salesperson',
-                   '客户公司':'customer','目的国':'destination','收款金额':'payment_received',
-                   '备注':'remarks','实重':'actual_weight','件数':'pieces'}
-        for label,vals in changes.items():
-            col=field_map.get(label)
-            if col: conn.execute(f"UPDATE shipments SET {col}=? WHERE id=?", (vals['new'],er['shipment_id']))
+        if changes.get('__action') == 'delete':
+            # approved delete request — remove the shipment
+            r = conn.execute("SELECT tracking_no FROM shipments WHERE id=?", (er['shipment_id'],)).fetchone()
+            conn.execute("DELETE FROM shipments WHERE id=?", (er['shipment_id'],))
+            conn.execute("DELETE FROM cell_colors WHERE shipment_id=?", (er['shipment_id'],))
+            log_action(session['user'], '批准删除运单',
+                       f"ID:{er['shipment_id']} 单号:{r['tracking_no'] if r else ''}")
+        else:
+            field_map={'原单号':'tracking_no','转单号':'transfer_no','业务员':'salesperson',
+                       '客户公司':'customer','目的国':'destination','收款金额':'payment_received',
+                       '备注':'remarks','实重':'actual_weight','件数':'pieces'}
+            for label,vals in changes.items():
+                col=field_map.get(label)
+                if col: conn.execute(f"UPDATE shipments SET {col}=? WHERE id=?", (vals['new'],er['shipment_id']))
     conn.commit(); conn.close()
     log_action(session['user'],f"{'批准' if status=='approved' else '驳回'}修改申请",f"ID:{eid}")
     return redirect(url_for('edits'))
