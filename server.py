@@ -10,20 +10,23 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from datetime import datetime
 from functools import wraps
+from dotenv import load_dotenv
+
+load_dotenv()  # load .env file
 
 app = Flask(__name__)
-app.secret_key = "xcst_v2_2026_secret"
+app.secret_key = os.environ.get("SECRET_KEY", "xcst_v2_2026_secret")
 
-# ── Config ────────────────────────────────────────────────────────
-WECHAT_TOKEN           = "shipment2026"
-WECHAT_APPID           = "wx8972261a0cd916fe"
-WECHAT_APPSECRET       = "89e0f64889cf2566e2cf7f6d376e417e"
-WECOM_TOKEN            = "shipment2026"
-WECOM_ENCODING_AES_KEY = "38suwNWYmITBKcpmoQLfEbTsTwm5XmLBcAibPKHIw6C"
-WECOM_CORP_ID          = "wwc870967282b4c3dd"
-WECOM_AGENT_ID         = 1000002
-WECOM_CORP_SECRET      = "cRCKA1q6SFLrB0-ynBNAOFH-zprH7xjEv7SGLi2pRTw"
-DASHSCOPE_API_KEY      = "sk-cb668d78ff184cd8bb22fc8378dcbf97"
+# ── Config (from .env) ────────────────────────────────────────────
+WECHAT_TOKEN           = os.environ.get("WECHAT_TOKEN", "")
+WECHAT_APPID           = os.environ.get("WECHAT_APPID", "")
+WECHAT_APPSECRET       = os.environ.get("WECHAT_APPSECRET", "")
+WECOM_TOKEN            = os.environ.get("WECOM_TOKEN", "")
+WECOM_ENCODING_AES_KEY = os.environ.get("WECOM_ENCODING_AES_KEY", "")
+WECOM_CORP_ID          = os.environ.get("WECOM_CORP_ID", "")
+WECOM_AGENT_ID         = int(os.environ.get("WECOM_AGENT_ID", 1000002))
+WECOM_CORP_SECRET      = os.environ.get("WECOM_CORP_SECRET", "")
+DASHSCOPE_API_KEY      = os.environ.get("DASHSCOPE_API_KEY", "")
 
 dashscope.api_key = DASHSCOPE_API_KEY
 DB_PATH   = "shipments.db"
