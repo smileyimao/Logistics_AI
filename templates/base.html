@@ -26,7 +26,7 @@
       <a href="{{ url_for('edits') }}"      class="nav-item {% if active=='edits'    %}active{% endif %}"><span class="nav-icon">✏️</span>运单修改</a>
       {% if session.role in ('admin','finance') %}
       <div class="nav-section">财务</div>
-      <a href="#" class="nav-item {% if active=='finance'  %}active{% endif %}"><span class="nav-icon">💰</span>财务看板</a>
+      <a href="{{ url_for('finance_dashboard') }}" class="nav-item {% if active=='finance' %}active{% endif %}"><span class="nav-icon">💰</span>财务看板</a>
       {% endif %}
       {% if session.role == 'admin' %}
       <div class="nav-section">管理</div>

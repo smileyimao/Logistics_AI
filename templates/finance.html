@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}财务看板{% endblock %}
+{% block page_title %}财务看板{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Month selector -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:13px;color:#8c8fa3">查看月份：</span>
+    <form method="GET" style="display:flex;gap:8px;align-items:center">
+      <input type="month" name="month" value="{{ month }}"
+             style="padding:6px 10px;border:1px solid #ebedf5;border-radius:6px;font-size:13px;outline:none;font-family:inherit"
+             onchange="this.form.submit()">
+    </form>
+    <span style="font-size:13px;color:#8c8fa3">{{ month }}</span>
+  </div>
+  <div style="font-size:12px;color:#8c8fa3">数据仅限 Admin / Finance 查看</div>
+</div>
+
+<!-- KPI cards -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+  <div class="fin-card">
+    <div class="fin-icon">💰</div>
+    <div class="fin-val">¥{{ '{:,.0f}'.format(kpi.month_revenue) }}</div>
+    <div class="fin-label">本月收款</div>
+  </div>
+  {% if can_see_profit %}
+  <div class="fin-card">
+    <div class="fin-icon">📈</div>
+    <div class="fin-val" style="color:{% if kpi.month_profit >= 0 %}#10b981{% else %}#ef4444{% endif %}">
+      ¥{{ '{:,.0f}'.format(kpi.month_profit) }}
+    </div>
+    <div class="fin-label">本月毛利</div>
+  </div>
+  {% endif %}
+  <div class="fin-card">
+    <div class="fin-icon">📦</div>
+    <div class="fin-val">{{ kpi.month_count }}</div>
+    <div class="fin-label">本月运单</div>
+  </div>
+  <div class="fin-card">
+    <div class="fin-icon">📅</div>
+    <div class="fin-val">¥{{ '{:,.0f}'.format(kpi.today_revenue) }}</div>
+    <div class="fin-label">今日收款</div>
+  </div>
+  {% if can_see_profit %}
+  <div class="fin-card">
+    <div class="fin-icon">💸</div>
+    <div class="fin-val">¥{{ '{:,.0f}'.format(kpi.month_cost) }}</div>
+    <div class="fin-label">本月付代理</div>
+  </div>
+  <div class="fin-card">
+    <div class="fin-icon">🧾</div>
+    <div class="fin-val">¥{{ '{:,.0f}'.format(kpi.month_misc) }}</div>
+    <div class="fin-label">本月杂费</div>
+  </div>
+  <div class="fin-card">
+    <div class="fin-icon">📊</div>
+    <div class="fin-val" style="color:{% if kpi.month_revenue > 0 %}#4c80f6{% else %}#8c8fa3{% endif %}">
+      {% if kpi.month_revenue > 0 %}
+        {{ '{:.1f}'.format(kpi.month_profit / kpi.month_revenue * 100) }}%
+      {% else %}—{% endif %}
+    </div>
+    <div class="fin-label">本月利润率</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Charts row 1: trend (full width) -->
+<div class="panel" style="margin-bottom:16px">
+  <div class="panel-header"><span class="panel-title">📈 近6个月趋势</span></div>
+  <div class="panel-body" style="padding:12px">
+    <div id="chart-trend" style="height:280px"></div>
+  </div>
+</div>
+
+<!-- Charts row 2: salesperson + channel -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">👤 业务员排行（{{ month }}）</span></div>
+    <div class="panel-body" style="padding:12px">
+      <div id="chart-salesperson" style="height:280px"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">🚢 渠道分布（{{ month }}）</span></div>
+    <div class="panel-body" style="padding:12px">
+      <div id="chart-channel" style="height:280px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Salesperson detail table -->
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">业务员明细（{{ month }}）</span></div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>业务员</th>
+          <th>运单数</th>
+          <th>收款金额</th>
+          {% if can_see_profit %}<th>毛利</th><th>利润率</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in salesperson_data %}
+        <tr>
+          <td><b>{{ r.salesperson or '未知' }}</b></td>
+          <td>{{ r.cnt }}</td>
+          <td>¥{{ '{:,.2f}'.format(r.revenue or 0) }}</td>
+          {% if can_see_profit %}
+          <td style="color:{% if (r.profit or 0) >= 0 %}#10b981{% else %}#ef4444{% endif %}">
+            ¥{{ '{:,.2f}'.format(r.profit or 0) }}
+          </td>
+          <td>
+            {% if r.revenue and r.revenue > 0 %}
+              {{ '{:.1f}'.format((r.profit or 0) / r.revenue * 100) }}%
+            {% else %}—{% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="empty">本月暂无数据</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var TREND  = {{ trend | tojson }};
+var SP     = {{ salesperson_data | tojson }};
+var CH     = {{ channel_data | tojson }};
+var DEST   = {{ dest_data | tojson }};
+var CAN_PROFIT = {{ 'true' if can_see_profit else 'false' }};
+
+var C = { blue:'#4c80f6', green:'#10b981', orange:'#f59e0b', gray:'#8c8fa3' };
+
+/* ── Trend chart ── */
+var trend = echarts.init(document.getElementById('chart-trend'));
+trend.setOption({
+  tooltip: { trigger:'axis', axisPointer:{type:'cross'} },
+  legend:  { data: CAN_PROFIT ? ['收款金额','毛利','运单数'] : ['收款金额','运单数'], top:0 },
+  grid:    { left:60, right:60, top:40, bottom:30 },
+  xAxis:   { type:'category', data: TREND.map(function(d){return d.month;}), axisLabel:{color:C.gray} },
+  yAxis: [
+    { type:'value', name:'金额(¥)', axisLabel:{formatter:function(v){return '¥'+(v/1000).toFixed(0)+'k';}, color:C.gray} },
+    { type:'value', name:'运单数',  position:'right', axisLabel:{color:C.gray} }
+  ],
+  series: [
+    { name:'收款金额', type:'line', smooth:true, yAxisIndex:0,
+      data: TREND.map(function(d){return d.revenue;}),
+      lineStyle:{color:C.blue,width:2}, itemStyle:{color:C.blue},
+      areaStyle:{color:'rgba(76,128,246,0.08)'} },
+    CAN_PROFIT ? { name:'毛利', type:'line', smooth:true, yAxisIndex:0,
+      data: TREND.map(function(d){return d.profit;}),
+      lineStyle:{color:C.green,width:2}, itemStyle:{color:C.green},
+      areaStyle:{color:'rgba(16,185,129,0.06)'} } : {},
+    { name:'运单数', type:'bar', yAxisIndex:1,
+      data: TREND.map(function(d){return d.count;}),
+      itemStyle:{color:'rgba(76,128,246,0.15)',borderRadius:[3,3,0,0]},
+      barMaxWidth:30 }
+  ]
+});
+
+/* ── Salesperson bar chart ── */
+var sp = echarts.init(document.getElementById('chart-salesperson'));
+var spNames = SP.map(function(d){return d.salesperson||'未知';}).reverse();
+sp.setOption({
+  tooltip: { trigger:'axis' },
+  grid:    { left:70, right:20, top:10, bottom:10 },
+  xAxis:   { type:'value', axisLabel:{formatter:function(v){return '¥'+(v/1000).toFixed(0)+'k';}, color:C.gray} },
+  yAxis:   { type:'category', data:spNames, axisLabel:{color:'#252b3a',fontSize:12} },
+  series: [
+    { name:'收款', type:'bar', data: SP.map(function(d){return d.revenue||0;}).reverse(),
+      itemStyle:{color:C.blue, borderRadius:[0,3,3,0]}, barMaxWidth:16,
+      label:{show:true, position:'right', formatter:function(p){return '¥'+(p.value/1000).toFixed(1)+'k';}, color:C.gray, fontSize:11} },
+    CAN_PROFIT ? { name:'毛利', type:'bar', data: SP.map(function(d){return d.profit||0;}).reverse(),
+      itemStyle:{color:C.green, borderRadius:[0,3,3,0]}, barMaxWidth:16 } : {}
+  ]
+});
+
+/* ── Channel pie chart ── */
+var ch = echarts.init(document.getElementById('chart-channel'));
+ch.setOption({
+  tooltip: { trigger:'item', formatter:'{b}: {c}票 ({d}%)' },
+  legend:  { orient:'vertical', right:0, top:'middle', textStyle:{color:'#252b3a',fontSize:11} },
+  series: [{
+    type:'pie', radius:['40%','68%'], center:['38%','50%'],
+    data: CH.map(function(d){ return {name:d.channel||'未知', value:d.cnt}; }),
+    label:{show:false},
+    itemStyle:{borderRadius:4, borderWidth:2, borderColor:'#fff'},
+    emphasis:{label:{show:true,fontSize:13,fontWeight:700}}
+  }]
+});
+
+window.addEventListener('resize', function(){
+  trend.resize(); sp.resize(); ch.resize();
+});
+</script>
+
+<style>
+.fin-card {
+  background: white; border: 1px solid #ebedf5; border-radius: 10px;
+  padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.fin-icon  { font-size: 22px; margin-bottom: 8px; }
+.fin-val   { font-size: 26px; font-weight: 800; color: #0f2044; line-height: 1.2; }
+.fin-label { font-size: 12px; color: #8c8fa3; margin-top: 4px; }
+</style>
+{% endblock %}

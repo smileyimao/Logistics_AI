@@ -679,6 +679,86 @@ def users():
     conn.close()
     return render_template('users.html', active='users', all_users=all_users, msg=msg, msg_type=msg_type)
 
+# ── Finance dashboard ─────────────────────────────────────────────
+@app.route("/app/finance")
+@roles('admin','finance')
+def finance_dashboard():
+    month = request.args.get('month', datetime.now().strftime('%Y-%m'))
+    today = datetime.now().strftime('%Y-%m-%d')
+    conn = db()
+
+    def safe_sum(col, where, params):
+        r = conn.execute(f"SELECT SUM(CAST({col} AS REAL)) FROM shipments WHERE {where}", params).fetchone()[0]
+        return round(r or 0, 2)
+    def safe_count(where, params):
+        return conn.execute(f"SELECT COUNT(*) FROM shipments WHERE {where}", params).fetchone()[0]
+
+    # KPI cards
+    kpi = {
+        'month_revenue': safe_sum('payment_received', 'created_at LIKE ?', (f'{month}%',)),
+        'month_profit':  safe_sum('gross_profit',     'created_at LIKE ?', (f'{month}%',)),
+        'month_count':   safe_count('created_at LIKE ?', (f'{month}%',)),
+        'today_revenue': safe_sum('payment_received', 'created_at LIKE ?', (f'{today}%',)),
+        'month_cost':    safe_sum('payment_amount',   'created_at LIKE ?', (f'{month}%',)),
+        'month_misc':    safe_sum('misc_fee',         'created_at LIKE ?', (f'{month}%',)),
+    }
+
+    # 6-month trend
+    trend = []
+    for i in range(5, -1, -1):
+        from datetime import date
+        from calendar import monthrange
+        today_d = date.today()
+        m = today_d.month - i
+        y = today_d.year + (m - 1) // 12
+        m = ((m - 1) % 12) + 1
+        label = f'{y}-{m:02d}'
+        trend.append({
+            'month':   label,
+            'revenue': safe_sum('payment_received', 'created_at LIKE ?', (f'{label}%',)),
+            'profit':  safe_sum('gross_profit',     'created_at LIKE ?', (f'{label}%',)),
+            'count':   safe_count('created_at LIKE ?', (f'{label}%',)),
+        })
+
+    # Salesperson ranking
+    role = session.get('role')
+    sp_rows = conn.execute("""
+        SELECT salesperson,
+               SUM(CAST(payment_received AS REAL)) as revenue,
+               SUM(CAST(gross_profit     AS REAL)) as profit,
+               COUNT(*) as cnt
+        FROM shipments
+        WHERE created_at LIKE ? AND salesperson != '' AND salesperson IS NOT NULL
+        GROUP BY salesperson ORDER BY revenue DESC LIMIT 10
+    """, (f'{month}%',)).fetchall()
+    salesperson_data = [dict(r) for r in sp_rows]
+
+    # Channel distribution
+    ch_rows = conn.execute("""
+        SELECT channel, COUNT(*) as cnt
+        FROM shipments
+        WHERE created_at LIKE ? AND channel != '' AND channel IS NOT NULL
+        GROUP BY channel ORDER BY cnt DESC LIMIT 10
+    """, (f'{month}%',)).fetchall()
+    channel_data = [dict(r) for r in ch_rows]
+
+    # Destination distribution
+    dest_rows = conn.execute("""
+        SELECT destination, COUNT(*) as cnt
+        FROM shipments
+        WHERE created_at LIKE ? AND destination != '' AND destination IS NOT NULL
+        GROUP BY destination ORDER BY cnt DESC LIMIT 8
+    """, (f'{month}%',)).fetchall()
+    dest_data = [dict(r) for r in dest_rows]
+
+    conn.close()
+    return render_template('finance.html', active='finance',
+        month=month, kpi=kpi, trend=trend,
+        salesperson_data=salesperson_data,
+        channel_data=channel_data,
+        dest_data=dest_data,
+        can_see_profit=(role=='admin'))
+
 # ── Settings ──────────────────────────────────────────────────────
 @app.route("/app/settings")
 @roles('admin')
